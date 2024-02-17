@@ -1,49 +1,25 @@
 #!/usr/bin/node
+/**
+  prints all characters of a Star Wars movie
+  */
 
-// Import the 'request' module for making HTTP requests
+const myArgs = process.argv.slice(2);
 const request = require('request');
+const url = 'https://swapi-api.hbtn.io/api/films/' + myArgs[0];
 
-// Define the URL for the Star Wars API (SWAPI) films endpoint with the film ID from the command line argument
-const filmUrl = `https://swapi-api.hbtn.io/api/films/${process.argv[2]}/`;
-
-// Make a request to the SWAPI films endpoint
-request(filmUrl, (error, response, body) => {
-  // Check for errors in the HTTP request
-  if (error) {
-    console.error('Error:', error);
-    return;
+request(url, async function (error, response, body) {
+  if (!error) {
+    const json = JSON.parse(body);
+    const endpoints = json.characters;
+    for (const endpoint of endpoints) {
+      await new Promise(function (resolve, reject) {
+        request(endpoint, function (error, response, body) {
+          if (!error) {
+            console.log(JSON.parse(body).name);
+            resolve();
+          }
+        });
+      });
+    }
   }
-
-  // Parse the JSON response from the SWAPI films endpoint
-  const film = JSON.parse(body);
-
-  // Create an object to map character URLs to their names
-  const urlToName = {};
-
-  // Iterate through each character URL in the film's character list
-  film.characters.forEach(characterUrl => {
-    // Make a request to the individual character's endpoint
-    request(characterUrl, (error, response, body) => {
-      // Check for errors in the HTTP request
-      if (error) {
-        console.error('Error:', error);
-        return;
-      }
-
-      // Parse the JSON response from the character's endpoint
-      const character = JSON.parse(body);
-
-      // Map the character's URL to their name in the object
-      urlToName[character.url] = character.name;
-
-      // Check if we have retrieved names for all characters
-      if (Object.keys(urlToName).length === film.characters.length) {
-        // Iterate through each character URL and print their names
-        film.characters.forEach(characterUrl =>
-          console.log(urlToName[characterUrl])
-        );
-      }
-    });
-  });
 });
-
